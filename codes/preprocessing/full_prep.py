@@ -186,5 +186,5 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
     _=pool.map(partial_savenpy,range(N))
     pool.close()
     pool.join()
-    print('end preprocessing')
+    print('======   end preprocessing   ========= \n')
     return filelist

@@ -3,7 +3,7 @@
 # test阶段使用配置文件
 config = {
     # 原始测试数据集存放路径
-    'datapath':'/work/DataBowl3/stage2/stage2/',
+    'datapath':'/home/g1002/datasets/test/',
     # 预处理结果存放路径
     'preprocess_result_path':'./prep_result/',
     # 输出文件名
