@@ -21,7 +21,7 @@ config = {
     # None表示开启机器所支持的最大线程数
     'n_worker_preprocessing':None,
 
-    'use_exsiting_preprocessing':False,
+    'use_exsiting_preprocessing':True,
     # 是否跳过预处理
     'skip_preprocessing':False,
 

@@ -152,7 +152,7 @@ def binarize_per_slice(image, spacing, intensity_th=-600, sigma=1, area_th=30, e
     1.
     """
     # visualize_3D(image)
-    print(image.shape)
+    # print(image.shape)
     assert image.shape[1]==image.shape[2],'CT的H与W不一致，可能出现error'
     #================     这一部分，先得到一个内切球的  mask ====================
     bw = np.zeros(image.shape, dtype=bool)
@@ -417,11 +417,11 @@ def step1_python(case_path,is_tc=True):
         # 传入binarize_per_slice生成的 3D mask
         bw, flag = all_slice_analysis(bw, spacing, cut_num=cut_num, vol_limit=[0.68,7.5])
         cut_num = cut_num + cut_step
-    print('bw shape ',bw.shape)
+    # print('bw shape ',bw.shape)
     # visualize_3D(bw.astype(np.uint8))
     bw = fill_hole(bw)
     # visualize_3D(bw.astype(np.uint8))
-    print('fill_hole over')
+    # print('fill_hole over')
     bw1, bw2, bw = two_lung_only(bw, spacing)
     # visualize_3D(bw1.astype(np.uint8))
     # visualize_3D(bw2.astype(np.uint8))

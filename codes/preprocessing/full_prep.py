@@ -14,6 +14,7 @@ from skimage.morphology import convex_hull_image
 from multiprocessing import Pool
 from functools import partial
 import glob
+from tqdm import tqdm
 
 from step1 import step1_python
 
@@ -99,7 +100,7 @@ def savenpy(id,filelist,prep_folder,data_path,use_existing=True):
     :param use_existing: bool 是否使用已经存在的预处理结果
     :return: 
     """
-    #
+    print('%d / %d\n'%(id,len(filelist)))
     resolution = np.array([1,1,1])
     ### name = filelist[id]
     name = filelist[id].replace('.mhd','')
@@ -179,12 +180,14 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
     # filelist = glob.glob(data_path+'*.mhd')
     # partial：内建对象，对可调用对象进行操作
     partial_savenpy = partial(savenpy,filelist=filelist,prep_folder=prep_folder,
-                              data_path=data_path,use_existing=use_existing)
+                             data_path=data_path,use_existing=use_existing)
 
     # CT图像的总数目
     N = len(filelist)
-    _=pool.map(partial_savenpy,range(N))
-    pool.close()
-    pool.join()
+    for i in tqdm(range(N)):
+        partial_savenpy(i)
+    # _=pool.map(partial_savenpy,range(N))
+    # pool.close()
+    # pool.join()
     print('======   end preprocessing   ========= \n')
     return filelist
