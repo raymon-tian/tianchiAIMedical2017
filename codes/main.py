@@ -23,7 +23,6 @@ from layers import acc
 from data_detector import DataBowl3Detector,collate
 from data_classifier import DataBowl3Classifier
 
-
 datapath = config_submit['datapath']
 prep_result_path = config_submit['preprocess_result_path']
 skip_prep = config_submit['skip_preprocessing']
