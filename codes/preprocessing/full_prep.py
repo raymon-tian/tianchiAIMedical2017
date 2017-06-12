@@ -179,13 +179,17 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
     filelist = [f for f in os.listdir(data_path) if f.endswith('.mhd')]
     # filelist = glob.glob(data_path+'*.mhd')
     # partial：内建对象，对可调用对象进行操作
-    partial_savenpy = partial(savenpy,filelist=filelist,prep_folder=prep_folder,
-                             data_path=data_path,use_existing=use_existing)
+    # partial_savenpy = partial(savenpy,filelist=filelist,prep_folder=prep_folder,
+    #                          data_path=data_path,use_existing=use_existing)
 
     # CT图像的总数目
     N = len(filelist)
     for i in tqdm(range(N)):
-        partial_savenpy(i)
+        savenpy(id=i,filelist=filelist,
+                prep_folder=prep_folder,
+                data_path=data_path,
+                use_existing=use_existing)
+        # partial_savenpy(i)
     # _=pool.map(partial_savenpy,range(N))
     # pool.close()
     # pool.join()
