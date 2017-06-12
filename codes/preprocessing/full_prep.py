@@ -116,7 +116,12 @@ def savenpy(id,filelist,prep_folder,data_path,use_existing=True):
 
         # 将尺寸进行统一的设置
         newshape = np.round(np.array(Mask.shape)*spacing/resolution)
+        # Mask每一个元素都为False的情况下，xx yy zz的值都为空，出现bug
         xx,yy,zz= np.where(Mask)
+        if(len(xx)==0 or len(yy)==0 or len(zz)==0):
+            print('bug in ' + name +' 请之后务必处理它！！！')
+            return
+        assert len(xx)!=0 and len(yy)!=0 and len(zz)!=0
         # 3x2 box 还是进行尺寸的统一设置
         box = np.array([[np.min(xx),np.max(xx)],[np.min(yy),np.max(yy)],[np.min(zz),np.max(zz)]])
         box = box*np.expand_dims(spacing,1)/np.expand_dims(resolution,1)
@@ -179,19 +184,21 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
     filelist = [f for f in os.listdir(data_path) if f.endswith('.mhd')]
     # filelist = glob.glob(data_path+'*.mhd')
     # partial：内建对象，对可调用对象进行操作
-    # partial_savenpy = partial(savenpy,filelist=filelist,prep_folder=prep_folder,
-    #                          data_path=data_path,use_existing=use_existing)
+    partial_savenpy = partial(savenpy,filelist=filelist,prep_folder=prep_folder,
+                             data_path=data_path,use_existing=use_existing)
 
     # CT图像的总数目
     N = len(filelist)
+    """
     for i in tqdm(range(N)):
         savenpy(id=i,filelist=filelist,
                 prep_folder=prep_folder,
                 data_path=data_path,
                 use_existing=use_existing)
         # partial_savenpy(i)
-    # _=pool.map(partial_savenpy,range(N))
-    # pool.close()
-    # pool.join()
+    """
+    _=pool.map(partial_savenpy,range(N))
+    pool.close()
+    pool.join()
     print('======   end preprocessing   ========= \n')
     return filelist
