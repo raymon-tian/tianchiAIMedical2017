@@ -17,6 +17,7 @@ if __name__=='__main__':
     print 'Build-In :', builtin_output
 
     pool_size=multiprocessing.cpu_count()*2
+    pool_size = None
     pool=multiprocessing.Pool(processes=pool_size,
         initializer=start_process,)
 

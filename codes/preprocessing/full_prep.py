@@ -1,4 +1,7 @@
 #coding=utf-8
+"""
+注释以 ### 开头的，表示原作者的代码
+"""
 import os
 import numpy as np
 from scipy.io import loadmat
@@ -10,6 +13,7 @@ from scipy.ndimage.morphology import binary_dilation,generate_binary_structure
 from skimage.morphology import convex_hull_image
 from multiprocessing import Pool
 from functools import partial
+import glob
 
 from step1 import step1_python
 
@@ -88,24 +92,25 @@ def resample(imgs, spacing, new_spacing,order = 2):
 def savenpy(id,filelist,prep_folder,data_path,use_existing=True):
     """
     线程函数，执行事实上的数据处理
-    :param id: 当前处理的CT图像的索引
-    :param filelist: 包含所有CT图像名的list
-    :param prep_folder: 预处理结果存储路径
-    :param data_path: 数据存放基路径
-    :param use_existing: 是否使用已经存在的预处理结果
+    :param id: int 当前处理的CT图像的索引
+    :param filelist: [str] 包含所有CT图像名的list
+    :param prep_folder: str 预处理结果存储路径
+    :param data_path: str 数据存放基路径
+    :param use_existing: bool 是否使用已经存在的预处理结果
     :return: 
     """
     #
     resolution = np.array([1,1,1])
-    name = filelist[id]
+    ### name = filelist[id]
+    name = filelist[id].replace('.mhd','')
     if use_existing:
-        # xxx_label.npy 以及 xxx_clean.npy都存在的话，说明预处理已经完毕
+        # xxx_label.npy 以及 xxx_clean.npy都在prep_folder中存在的话，说明该CT图像的预处理已经完毕
         if os.path.exists(os.path.join(prep_folder,name+'_label.npy')) and os.path.exists(os.path.join(prep_folder,name+'_clean.npy')):
             print(name+' had been done')
             return
     try:
         # 得到CT图像的3D图像，以及两个肺叶的mask，各个轴之间的距离
-        im, m1, m2, spacing = step1_python(os.path.join(data_path,name))
+        im, m1, m2, spacing = step1_python(os.path.join(data_path,filelist[id]))
         Mask = m1+m2
 
         # 将尺寸进行统一的设置
@@ -167,8 +172,11 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
 
             
     print('starting preprocessing')
+    # n_worker为None的时候，表示开启全部线程数
     pool = Pool(n_worker)#Python多线程编程
-    filelist = [f for f in os.listdir(data_path)]
+    ### filelist = [f for f in os.listdir(data_path)]
+    filelist = [f for f in os.listdir(data_path) if f.endswith('.mhd')]
+    # filelist = glob.glob(data_path+'*.mhd')
     # partial：内建对象，对可调用对象进行操作
     partial_savenpy = partial(savenpy,filelist=filelist,prep_folder=prep_folder,
                               data_path=data_path,use_existing=use_existing)

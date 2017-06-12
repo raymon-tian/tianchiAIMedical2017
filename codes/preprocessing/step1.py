@@ -138,14 +138,14 @@ def binarize_per_slice(image, spacing, intensity_th=-600, sigma=1, area_th=30, e
     properties = measure.regionprops(label)# 度量各个label区域的属性
     涉及到一些参数    
     :param image: image.shape[0]索引图像的深度，轴的顺序为 (D,H,W)
-    :param spacing: 就是CT图像各个轴之间的间隙，同样的，spacing[0]表示CT深度方向
+    :param spacing: 就是CT图像各个轴之间的间隙，同样的，spacing[0]表示CT深度方向，轴的顺序为 (D,H,W)
     :param intensity_th: 使用该值进行二值操作；按照wikipedia的说法，肺的HU在-700～-600
     :param sigma: 设置高斯滤波
     :param area_th: 连通域面积阈值
     :param eccen_th: 离心率
     :param bg_patch_size: 对一个slice 左上拐角边角区域的选择
     :return: 
-    
+    与image一样纬度的3D mask，只包含 0 1
     注意：
     1. 一定检测 CT的 H和W 是否相等
     流程：
@@ -178,6 +178,7 @@ def binarize_per_slice(image, spacing, intensity_th=-600, sigma=1, area_th=30, e
         # bg_patch_size x bg_patch_size 的patch的所有元素全部相同
         #=========  进行 高斯滤波  ============
         # bug nan_mask 与 image[i]的尺寸可能不相等
+        # 一个slice的左上角
         if len(np.unique(image[i, 0:bg_patch_size, 0:bg_patch_size])) == 1:
             current_bw = scipy.ndimage.filters.gaussian_filter(np.multiply(image[i].astype('float32'), nan_mask), sigma, truncate=2.0) < intensity_th
         else:
@@ -387,10 +388,11 @@ def two_lung_only(bw, spacing, max_iter=22, max_ratio=4.8):
 
     return bw1, bw2, bw
 
-def step1_python(case_path,is_tc=False):
+def step1_python(case_path,is_tc=True):
     """
     处理一个CT图像的pipeline
     :param case_path: 一个CT图像的完整路径
+    :param is_tc: 处理数据是否为 天池 的数据
     :return: 
     case_pixels ： ndarray (D,H,W) np.int16 原始的CT图像
     bw1         ： ndarray (D,H,W) np.bool 第一片肺叶掩码
@@ -421,8 +423,8 @@ def step1_python(case_path,is_tc=False):
     # visualize_3D(bw.astype(np.uint8))
     print('fill_hole over')
     bw1, bw2, bw = two_lung_only(bw, spacing)
-    visualize_3D(bw1.astype(np.uint8))
-    visualize_3D(bw2.astype(np.uint8))
+    # visualize_3D(bw1.astype(np.uint8))
+    # visualize_3D(bw2.astype(np.uint8))
     return case_pixels, bw1, bw2, spacing
     
 if __name__ == '__main__':

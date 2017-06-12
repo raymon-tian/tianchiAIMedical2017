@@ -1,14 +1,14 @@
 #coding=utf-8
 
-# 测试用配置文件
+# test阶段使用配置文件
 config = {
-    # stage2 data是用来预测的？
+    # 原始测试数据集存放路径
     'datapath':'/work/DataBowl3/stage2/stage2/',
-    # 路径
+    # 预处理结果存放路径
     'preprocess_result_path':'./prep_result/',
     # 输出文件名
     'outputfile':'prediction.csv',
-    # 这个应该是个Python脚本
+    # 肺结节检测模型（这个应该是个Python脚本）
     'detector_model':'net_detector.py',
     # ckpt好像是tensorflow的模型文件后缀;训练好的模型的参数
     'detector_param':'./model/detector.ckpt',
@@ -18,7 +18,7 @@ config = {
     'classifier_param':'./model/classifier.ckpt',
 
     'n_gpu':1,
-
+    # None表示开启机器所支持的最大线程数
     'n_worker_preprocessing':None,
 
     'use_exsiting_preprocessing':False,
