@@ -23,7 +23,7 @@ config = {
 
     'use_exsiting_preprocessing':True,
     # 是否跳过预处理
-    'skip_preprocessing':False,
+    'skip_preprocessing':True,
 
     'skip_detect':False
 }

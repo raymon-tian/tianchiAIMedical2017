@@ -37,6 +37,7 @@ def test_detect(data_loader, net, get_pbb, save_dir, config,n_gpu):
     split_comber = data_loader.dataset.split_comber
     # data:3D CT; target:该CT的所有肺结节标注信息; coord：CT patch的list ; nzhw：grid的维度
     for i_name, (data, target, coord, nzhw) in enumerate(data_loader):
+        print('=============================')
         s = time.time()
         target = [np.asarray(t, np.float32) for t in target] # [第一条肺结节信息，第二条肺结节信息]
         lbb = target[0]
@@ -52,7 +53,7 @@ def test_detect(data_loader, net, get_pbb, save_dir, config,n_gpu):
             if config['output_feature']:
                 isfeat = True
         n_per_run = n_gpu
-        print(data.size())
+        # print(data.size())
         splitlist = range(0,len(data)+1,n_gpu)
         if splitlist[-1]!=len(data):
             splitlist.append(len(data))

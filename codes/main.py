@@ -72,7 +72,7 @@ if not skip_detect:
     test_detect(test_loader, nod_net, get_pbb, bbox_result_path,config1,n_gpu=config_submit['n_gpu'])
 
     
-
+exit()
 # ==== 开始分类 ===========
 casemodel = import_module(config_submit['classifier_model'].split('.py')[0])
 casenet = casemodel.CaseNet(topk=5)
