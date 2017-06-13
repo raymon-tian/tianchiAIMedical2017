@@ -5,7 +5,7 @@ config = {
     # 原始测试数据集存放路径
     'datapath':'/home/g1002/datasets/test/',
     # 预处理结果存放路径
-    'preprocess_result_path':'./prep_result/',
+    'preprocess_result_path':'/home/g1002/dongwang/tianchiAIMedical2017/prep_result/',
     # 输出文件名
     'outputfile':'prediction.csv',
     # 肺结节检测模型（这个应该是个Python脚本）
