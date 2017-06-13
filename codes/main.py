@@ -35,7 +35,7 @@ if not skip_prep:
 else:
     # testsplit = os.listdir(datapath)
     # ['xxxx.mhd','xxxx.mhd']
-    filelist = [f for f in os.listdir(datapath) if f.endswith('.mhd')]
+    testsplit = [f for f in os.listdir(datapath) if f.endswith('.mhd')]
 
 # ===========   开始 detection ========
 nodmodel = import_module(config_submit['detector_model'].split('.py')[0])
