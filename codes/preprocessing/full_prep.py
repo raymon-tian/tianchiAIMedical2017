@@ -100,11 +100,10 @@ def savenpy(id,filelist,prep_folder,data_path,use_existing=True):
     :param use_existing: bool 是否使用已经存在的预处理结果
     :return: 
     """
-    print('%d / %d\n'%(id,len(filelist)))
+    print('%d / %d'%(id,len(filelist)))
     resolution = np.array([1,1,1])
     ### name = filelist[id]
     name = filelist[id].replace('.mhd','')
-    print('start handle  '+name)
 
     if use_existing:
         # xxx_label.npy 以及 xxx_clean.npy都在prep_folder中存在的话，说明该CT图像的预处理已经完毕
@@ -112,6 +111,7 @@ def savenpy(id,filelist,prep_folder,data_path,use_existing=True):
             print(name+' had been done')
             return
     try:
+        print('start handle  ' + name)
         # 得到CT图像的3D图像，以及两个肺叶的mask，各个轴之间的距离
         im, m1, m2, spacing = step1_python(os.path.join(data_path,filelist[id]))
         Mask = m1+m2
@@ -162,8 +162,9 @@ def savenpy(id,filelist,prep_folder,data_path,use_existing=True):
         np.save(os.path.join(prep_folder,name+'_label'),np.array([[0,0,0,0]]))
     except:
         print('bug in '+name)
+        exit()
         raise
-    print(name+' done')
+    print(name+' done\n')
 
     
 def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):

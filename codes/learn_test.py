@@ -55,11 +55,31 @@ if __name__ == '__main__':
         f_v[i,2] = split[-2]+'/'+split[-1]
 
 
-    print(f_n[:,2][:5])
-    print(f_v[:,2][:5])
+    # print(f_n[:,2][:5])
+    # print(f_v[:,2][:5])
 
+    column_names = ['path','person','person_pic']
+    f_n = pd.DataFrame(f_n,columns=column_names)
+    f_v = pd.DataFrame(f_v,columns=column_names)
+    path_n = f_n['path'].as_matrix().tolist()
+    path_v = f_v['path'].as_matrix().tolist()
+    # print(f_n.head(20))
+    # print(f_v.head(20))
 
+    merged = f_n.merge(right=f_v,how='inner',on=column_names[2],suffixes=('_n','_v'),copy=False)
+    # print(merged.head(20))
+    leg_path_n = merged['path_n'].as_matrix().tolist()
+    leg_path_v = merged['path_v'].as_matrix().tolist()
+    # print(leg_path_n[:5])
 
+    for i in tqdm(range(len(path_n))):
+        case = path_n[i]
+        if case not in leg_path_n:
+            os.system('rm %s'%case)
+    for i in tqdm(range(len(path_v))):
+        case = path_v[i]
+        if case not in leg_path_v:
+            os.system('rm %s'%case)
 """
 if __name__=='__main__':
     ttest(1,2,3)

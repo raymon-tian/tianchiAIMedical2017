@@ -215,6 +215,7 @@ def all_slice_analysis(bw, spacing, cut_num=0, vol_limit=[0.68, 8.2], area_th=6e
     :param dist_th: 
     :return: bw : 3d mask 只有 True False两种取值, len(valid_label)
     """
+    print('start all_slice_analysis')
     # in some cases, several top layers need to be removed first
     if cut_num > 0:
         bw0 = np.copy(bw)
