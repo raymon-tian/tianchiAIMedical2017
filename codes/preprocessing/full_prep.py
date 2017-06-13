@@ -186,6 +186,14 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
     pool = Pool(n_worker)#Python多线程编程
     ### filelist = [f for f in os.listdir(data_path)]
     filelist = [f for f in os.listdir(data_path) if f.endswith('.mhd')]
+
+    """
+    因为一些CT图像目前预处理方面有bug，所以，暂时跳过这些CT图像
+    """
+    blocklist = ['LKDS-00383','LKDS-00439','LKDS-00300']
+    filelist = [f for f in filelist if f not in blocklist]
+
+    
     # filelist = glob.glob(data_path+'*.mhd')
     # partial：内建对象，对可调用对象进行操作
     # partial_savenpy = partial(savenpy,filelist=filelist,prep_folder=prep_folder,
