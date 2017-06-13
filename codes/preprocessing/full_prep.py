@@ -190,7 +190,7 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
     """
     因为一些CT图像目前预处理方面有bug，所以，暂时跳过这些CT图像
     """
-    blocklist = ['LKDS-00383','LKDS-00439','LKDS-00300']
+    blocklist = ['LKDS-00383.mhd','LKDS-00439.mhd','LKDS-00300.mhd']
     filelist = [f for f in filelist if f not in blocklist]
 
 
