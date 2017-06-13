@@ -420,6 +420,7 @@ def step1_python(case_path,is_tc=True):
         # 传入binarize_per_slice生成的 3D mask
         bw, flag = all_slice_analysis(bw, spacing, cut_num=cut_num, vol_limit=[0.68,7.5])
         cut_num = cut_num + cut_step
+    print('all_slice_analysis done')
     # print('bw shape ',bw.shape)
     # visualize_3D(bw.astype(np.uint8))
     bw = fill_hole(bw)
