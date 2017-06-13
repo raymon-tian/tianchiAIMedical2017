@@ -7,6 +7,15 @@ class SplitComb():
     这个类好像是将一张CT图像进行分裂好几个图像块；或者，将好几个图像块合并到一起
     """
     def __init__(self,side_len,max_stride,stride,margin,pad_value):
+        """
+        usage : SplitComb(sidelen,config1['max_stride'],config1['stride'],margin,pad_value= config1['pad_value'])
+        
+        :param side_len: int 144
+        :param max_stride: int 16
+        :param stride: int 4
+        :param margin: int 32
+        :param pad_value: int 170
+        """
         self.side_len = side_len
         self.max_stride = max_stride
         self.stride = stride
@@ -16,7 +25,7 @@ class SplitComb():
     def split(self, data, side_len = None, max_stride = None, margin = None):
         """
         
-        :param data: 
+        :param data: 3D CT 图像 (1,D,H,W) 长宽高都是 stride的整数倍
         :param side_len: 
         :param max_stride: 
         :param margin: 

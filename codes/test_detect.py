@@ -24,7 +24,7 @@ def test_detect(data_loader, net, get_pbb, save_dir, config,n_gpu):
     usage : 
     test_detect(test_loader, nod_net, get_pbb, bbox_result_path,config1,n_gpu=config_submit['n_gpu'])
 
-    :param data_loader: 
+    :param data_loader: from torch.utils.data import DataLoader 由torch提供
     :param net: 
     :param get_pbb: 
     :param save_dir: 

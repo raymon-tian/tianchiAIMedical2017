@@ -104,6 +104,8 @@ def savenpy(id,filelist,prep_folder,data_path,use_existing=True):
     resolution = np.array([1,1,1])
     ### name = filelist[id]
     name = filelist[id].replace('.mhd','')
+    print('start handle  '+name)
+
     if use_existing:
         # xxx_label.npy 以及 xxx_clean.npy都在prep_folder中存在的话，说明该CT图像的预处理已经完毕
         if os.path.exists(os.path.join(prep_folder,name+'_label.npy')) and os.path.exists(os.path.join(prep_folder,name+'_clean.npy')):
@@ -152,6 +154,7 @@ def savenpy(id,filelist,prep_folder,data_path,use_existing=True):
         sliceim2 = sliceim1[extendbox[0,0]:extendbox[0,1],
                     extendbox[1,0]:extendbox[1,1],
                     extendbox[2,0]:extendbox[2,1]]
+        # (1,D,H,W)
         sliceim = sliceim2[np.newaxis,...]
         # 将 sliceim 与 np.array([[0,0,0,0]]) 进行存盘
         np.save(os.path.join(prep_folder,name+'_clean'),sliceim)
@@ -170,7 +173,8 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
     :param prep_folder: 预处理结果存放路径
     :param n_worker: 预处理线程数
     :param use_existing: bool 
-    :return: 
+    :return: mhd文件文件名的list 
+    filelist
     """
     warnings.filterwarnings("ignore")
     if not os.path.exists(prep_folder):
@@ -184,21 +188,21 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
     filelist = [f for f in os.listdir(data_path) if f.endswith('.mhd')]
     # filelist = glob.glob(data_path+'*.mhd')
     # partial：内建对象，对可调用对象进行操作
-    partial_savenpy = partial(savenpy,filelist=filelist,prep_folder=prep_folder,
-                             data_path=data_path,use_existing=use_existing)
+    # partial_savenpy = partial(savenpy,filelist=filelist,prep_folder=prep_folder,
+    #                          data_path=data_path,use_existing=use_existing)
 
     # CT图像的总数目
     N = len(filelist)
-    """
+
     for i in tqdm(range(N)):
         savenpy(id=i,filelist=filelist,
                 prep_folder=prep_folder,
                 data_path=data_path,
                 use_existing=use_existing)
         # partial_savenpy(i)
-    """
-    _=pool.map(partial_savenpy,range(N))
-    pool.close()
-    pool.join()
+
+    # _=pool.map(partial_savenpy,range(N))
+    # pool.close()
+    # pool.join()
     print('======   end preprocessing   ========= \n')
     return filelist

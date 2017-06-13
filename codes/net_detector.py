@@ -1,3 +1,4 @@
+#coding=utf-8
 import torch
 from torch import nn
 
@@ -25,7 +26,18 @@ config['sizelim3'] = 40
 config['aug_scale'] = True
 config['r_rand_crop'] = 0.3
 config['pad_value'] = 170
+"""
+config['luna_raw'] 的使用
+            if config['luna_raw'] == True:
+                try:
+                    l = np.load(os.path.join(data_dir, '%s_label_raw.npy' % idx))
+                except:
+                    l = np.load(os.path.join(data_dir, '%s_label.npy' % idx))
+            else:
+                l = np.load(os.path.join(data_dir, '%s_label.npy' % idx))
+"""
 config['luna_raw'] = True
+
 # 是否使用预处理过后的CT图像
 config['cleanimg'] = True
 config['augtype'] = {'flip':True,'swap':False,'scale':True,'rotate':False}

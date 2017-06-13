@@ -21,15 +21,15 @@ class DataBowl3Detector(Dataset):
         usage :     
         dataset = DataBowl3Detector(testsplit,config1,phase='test',split_comber=split_comber)
 
-        :param split: [str] 存放测试样本文件名的list
+        :param split: [str] 存放测试样本文件名的list ['xxx.mhd']
         :param config: dict 网络结构定义中的配置项
         :param phase: str
-        :param split_comber: 
+        :param split_comber: SplitComb类型
         """
         assert (phase == 'train' or phase == 'val' or phase == 'test')
         self.phase = phase
         self.max_stride = config['max_stride']
-        self.stride = config['stride']
+        self.stride = config['stride'] # 4
         sizelim = config['sizelim'] / config['reso']
         sizelim2 = config['sizelim2'] / config['reso']
         sizelim3 = config['sizelim3'] / config['reso']
@@ -37,15 +37,20 @@ class DataBowl3Detector(Dataset):
         self.isScale = config['aug_scale']
         self.r_rand = config['r_rand_crop']
         self.augtype = config['augtype']
+        # 预处理结果的存放路径
         data_dir = config['datadir']
         self.pad_value = config['pad_value']
 
         self.split_comber = split_comber
-        # 这边可能要修改
+        # 这边可能要修改，把.mhd去掉
         idcs = split
+        # CT图像id的list
+        idcs = [temp.replace('.mhd','') for temp in idcs]
         if phase != 'test':
+            # test阶段是不需要过滤样本的
             idcs = [f for f in idcs if f not in self.blacklist]
 
+        # self.filenames ： 预处理结果的['xxxxx_clean.npy']
         self.channel = config['chanel']
         if self.channel == 2:
             self.filenames = [os.path.join(data_dir, '%s_merge.npy' % idx) for idx in idcs]
@@ -54,9 +59,11 @@ class DataBowl3Detector(Dataset):
                 self.filenames = [os.path.join(data_dir, '%s_clean.npy' % idx) for idx in idcs]
             else:
                 self.filenames = [os.path.join(data_dir, '%s_img.npy' % idx) for idx in idcs]
-        self.kagglenames = [f for f in self.filenames if len(f.split('/')[-1].split('_')[0]) > 20]
-        self.lunanames = [f for f in self.filenames if len(f.split('/')[-1].split('_')[0]) < 20]
+        # 将 Luna16 以及 kaggle的数据分开，暂时不用
+        # self.kagglenames = [f for f in self.filenames if len(f.split('/')[-1].split('_')[0]) > 20]
+        # self.lunanames = [f for f in self.filenames if len(f.split('/')[-1].split('_')[0]) < 20]
 
+        # ['XXXXX_label.npy']
         labels = []
 
         for idx in idcs:
@@ -69,7 +76,7 @@ class DataBowl3Detector(Dataset):
                 l = np.load(os.path.join(data_dir, '%s_label.npy' % idx))
             labels.append(l)
 
-        # [一个CT的所有肺结节标注信息]
+        # [第一个CT的所有肺结节标注信息,第二个CT的所有肺结节标注信息,...]
         self.sample_bboxes = labels
         if self.phase != 'test':
             self.bboxes = []
@@ -87,11 +94,18 @@ class DataBowl3Detector(Dataset):
             # 0: id,表示该肺结节标注信息所属CT图像的索引
             # 1: D 2:H 3:W 4:Dia
             self.bboxes = np.concatenate(self.bboxes, axis=0)
-
+        # 构造函数，不执行具体计算
         self.crop = Crop(config)
+        # 构造函数，不执行具体计算
         self.label_mapping = LabelMapping(config, self.phase)
 
     def __getitem__(self, idx, split=None):
+        """
+        继承父类方法，必须实现
+        :param idx: 样本索引
+        :param split: 
+        :return: 
+        """
         t = time.time()
         np.random.seed(int(str(t % 1)[2:7]))  # seed according to time
 
@@ -135,18 +149,23 @@ class DataBowl3Detector(Dataset):
             return torch.from_numpy(sample), torch.from_numpy(label), coord
         else:
             # test阶段
-            imgs = np.load(self.filenames[idx])
-            bboxes = self.sample_bboxes[idx]
+            """
+            将图像的 D H W 处理为self.stride的整数倍（ceil方式），多出来的像素值填充为 self.pad_value
+            """
+            imgs = np.load(self.filenames[idx]) # str xxxx_clean.npy 预处理过后的CT图像
+            bboxes = self.sample_bboxes[idx]# ndarray (N,4) 4表示: D H W dia
+            # 没错，imgs的shape为 (1,D,H,W)
             nz, nh, nw = imgs.shape[1:]
-            # 就是向上取整；np floor为向下取整
-            pz = int(np.ceil(float(nz) / self.stride)) * self.stride
-            ph = int(np.ceil(float(nh) / self.stride)) * self.stride
-            pw = int(np.ceil(float(nw) / self.stride)) * self.stride
+            # np.ceil就是向上取整；np floor为向下取整
+            pz = int(np.ceil(float(nz) / self.stride)) * self.stride # 转化为stride的整数倍
+            ph = int(np.ceil(float(nh) / self.stride)) * self.stride # 转化为stride的整数倍
+            pw = int(np.ceil(float(nw) / self.stride)) * self.stride # 转化为stride的整数倍
             imgs = np.pad(imgs, [[0, 0], [0, pz - nz], [0, ph - nh], [0, pw - nw]], 'constant',
-                          constant_values=self.pad_value)
+                          constant_values=self.pad_value)# 多出来的地方进行填充，填充为170;填充过后图像的尺寸为 (1,pz,ph,pw)
             xx, yy, zz = np.meshgrid(np.linspace(-0.5, 0.5, imgs.shape[1] / self.stride),
                                      np.linspace(-0.5, 0.5, imgs.shape[2] / self.stride),
                                      np.linspace(-0.5, 0.5, imgs.shape[3] / self.stride), indexing='ij')
+            # coord 用来做什么不清楚
             coord = np.concatenate([xx[np.newaxis, ...], yy[np.newaxis, ...], zz[np.newaxis, :]], 0).astype('float32')
             imgs, nzhw = self.split_comber.split(imgs)
             coord2, nzhw2 = self.split_comber.split(coord,
@@ -160,6 +179,11 @@ class DataBowl3Detector(Dataset):
                 coord2.astype(np.float32)), np.array(nzhw)
 
     def __len__(self):
+        """
+        继承父类方法，必须实现
+
+        :return: 
+        """
         if self.phase == 'train':
             return len(self.bboxes) / (1 - self.r_rand)
         elif self.phase == 'val':
@@ -213,6 +237,10 @@ def augment(sample, target, bboxes, coord, ifflip=True, ifrotate=True, ifswap=Tr
 
 class Crop(object):
     def __init__(self, config):
+        """
+        
+        :param config: dict 来自于 net_detector.py中的config
+        """
         self.crop_size = config['crop_size']
         self.bound_size = config['bound_size']
         self.stride = config['stride']

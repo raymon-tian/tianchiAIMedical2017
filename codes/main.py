@@ -33,8 +33,11 @@ if not skip_prep:
                           n_worker = config_submit['n_worker_preprocessing'],
                           use_existing=config_submit['use_exsiting_preprocessing'])
 else:
-    testsplit = os.listdir(datapath)
+    # testsplit = os.listdir(datapath)
+    # ['xxxx.mhd','xxxx.mhd']
+    filelist = [f for f in os.listdir(datapath) if f.endswith('.mhd')]
 
+# ===========   开始 detection ========
 nodmodel = import_module(config_submit['detector_model'].split('.py')[0])
 config1, nod_net, loss, get_pbb = nodmodel.get_model()
 checkpoint = torch.load(config_submit['detector_param'])
@@ -50,16 +53,20 @@ if not os.path.exists(bbox_result_path):
     os.mkdir(bbox_result_path)
 #testsplit = [f.split('_clean')[0] for f in os.listdir(prep_result_path) if '_clean' in f]
 
+# 是否跳过 detection的过程，天池肯定不能跳过
 if not skip_detect:
     margin = 32
     sidelen = 144
     config1['datadir'] = prep_result_path
+    # 先将3DCT图像进行分裂，因为如果不分裂，GPU会爆显存
+    # 构造函数，不执行具体计算
     split_comber = SplitComb(sidelen,config1['max_stride'],config1['stride'],margin,pad_value= config1['pad_value'])
-
+    # 构造函数，不执行具体计算
     dataset = DataBowl3Detector(testsplit,config1,phase='test',split_comber=split_comber)
+    # 构造函数，不执行具体计算
     test_loader = DataLoader(dataset,batch_size = 1,
         shuffle = False,num_workers = 32,pin_memory=False,collate_fn =collate)
-
+    # 开始执行计算
     test_detect(test_loader, nod_net, get_pbb, bbox_result_path,config1,n_gpu=config_submit['n_gpu'])
 
     

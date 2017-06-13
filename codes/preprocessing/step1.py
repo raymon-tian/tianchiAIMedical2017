@@ -145,7 +145,7 @@ def binarize_per_slice(image, spacing, intensity_th=-600, sigma=1, area_th=30, e
     :param eccen_th: 离心率
     :param bg_patch_size: 对一个slice 左上拐角边角区域的选择
     :return: 
-    与image一样纬度的3D mask，只包含 0 1
+    与image一样维度的3D mask，只包含 0 1
     注意：
     1. 一定检测 CT的 H和W 是否相等
     流程：
@@ -179,6 +179,7 @@ def binarize_per_slice(image, spacing, intensity_th=-600, sigma=1, area_th=30, e
         #=========  进行 高斯滤波  ============
         # bug nan_mask 与 image[i]的尺寸可能不相等
         # 一个slice的左上角
+        # current_bw 的 H W 与 原始CT的H W 一致；current_bw只有两类label True False
         if len(np.unique(image[i, 0:bg_patch_size, 0:bg_patch_size])) == 1:
             current_bw = scipy.ndimage.filters.gaussian_filter(np.multiply(image[i].astype('float32'), nan_mask), sigma, truncate=2.0) < intensity_th
         else:
@@ -194,6 +195,7 @@ def binarize_per_slice(image, spacing, intensity_th=-600, sigma=1, area_th=30, e
             # area表示该连通域中像素的个数  eccentricity:离心率
             if prop.area * spacing[1] * spacing[2] > area_th and prop.eccentricity < eccen_th:
                 valid_label.add(prop.label) # label是int
+        # current_bw依旧为 2值 的
         current_bw = np.in1d(label, list(valid_label)).reshape(label.shape)
         bw[i] = current_bw
         # if(i%10==0):
