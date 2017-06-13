@@ -183,7 +183,7 @@ def full_prep(data_path,prep_folder,n_worker = None,use_existing=True):
             
     print('starting preprocessing')
     # n_worker为None的时候，表示开启全部线程数
-    pool = Pool(n_worker)#Python多线程编程
+    # pool = Pool(n_worker)#Python多线程编程
     ### filelist = [f for f in os.listdir(data_path)]
     filelist = [f for f in os.listdir(data_path) if f.endswith('.mhd')]
 
