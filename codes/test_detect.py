@@ -38,15 +38,17 @@ def test_detect(data_loader, net, get_pbb, save_dir, config,n_gpu):
     # data:3D CT; target:该CT的所有肺结节标注信息; coord：CT patch的list ; nzhw：grid的维度
     for i_name, (data, target, coord, nzhw) in enumerate(data_loader):
         s = time.time()
-        target = [np.asarray(t, np.float32) for t in target]
+        target = [np.asarray(t, np.float32) for t in target] # [第一条肺结节信息，第二条肺结节信息]
         lbb = target[0]
         nzhw = nzhw[0]
-        name = data_loader.dataset.filenames[i_name].split('-')[0].split('/')[-1]
+        # 要修改，有问题
+        # name = data_loader.dataset.filenames[i_name].split('-')[0].split('/')[-1]
+        name = data_loader.dataset.filenames[i_name].split('/')[-1]
         shortname = name.split('_clean')[0]
-        data = data[0][0]
+        data = data[0][0] # 现在的data 应该是 (D,H,W)
         coord = coord[0][0]
         isfeat = False
-        if 'output_feature' in config:
+        if 'output_feature' in config:#config中没有这么一项
             if config['output_feature']:
                 isfeat = True
         n_per_run = n_gpu
@@ -60,20 +62,23 @@ def test_detect(data_loader, net, get_pbb, save_dir, config,n_gpu):
         for i in range(len(splitlist)-1):
             input = Variable(data[splitlist[i]:splitlist[i+1]], volatile = True).cuda()
             inputcoord = Variable(coord[splitlist[i]:splitlist[i+1]], volatile = True).cuda()
+            # isfeat 为 False
             if isfeat:
                 output,feature = net(input,inputcoord)
                 featurelist.append(feature.data.cpu().numpy())
             else:
-                output = net(input,inputcoord)
+                output = net(input,inputcoord)# 这才是网络的真正输入
             outputlist.append(output.data.cpu().numpy())
         output = np.concatenate(outputlist,0)
-        output = split_comber.combine(output,nzhw=nzhw)
+        output = split_comber.combine(output,nzhw=nzhw)#将输出整合起来
+        # isfeat 为 False
         if isfeat:
             feature = np.concatenate(featurelist,0).transpose([0,2,3,4,1])[:,:,:,:,:,np.newaxis]
             feature = split_comber.combine(feature, sidelen)[..., 0]
 
         thresh = -3
-        pbb,mask = get_pbb(output,thresh,ismask=True)
+        pbb,mask = get_pbb(output,thresh,ismask=True)# 根据输出得到预测的bounding box
+        # isfeat 为 False
         if isfeat:
             feature_selected = feature[mask[0],mask[1],mask[2]]
             np.save(os.path.join(save_dir, shortname+'_feature.npy'), feature_selected)

@@ -24,12 +24,15 @@ class SplitComb():
         
     def split(self, data, side_len = None, max_stride = None, margin = None):
         """
-        
+        将一个CT图像(data)分类成patches，返回结果为
+        splits ： ndarray (N,1,D,H,W)
+        nzhw = [nz,nh,nw]
         :param data: 3D CT 图像 (1,D,H,W) 长宽高都是 stride的整数倍
         :param side_len: 
         :param max_stride: 
         :param margin: 
         :return: 
+        splits ： ndarray (N,1,D,H,W)
         """
         if side_len==None:
             side_len = self.side_len
@@ -51,7 +54,8 @@ class SplitComb():
         
         nzhw = [nz,nh,nw]
         self.nzhw = nzhw
-        
+
+        # 再一次填充
         pad = [ [0, 0],
                 [margin, nz * side_len - z + margin],
                 [margin, nh * side_len - h + margin],

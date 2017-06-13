@@ -409,6 +409,7 @@ def step1_python(case_path,is_tc=True):
         case_pixels, spacing = get_pixels_hu(case)
 
     bw = binarize_per_slice(case_pixels, spacing)
+    print('binarize_per_slice done')
     flag = 0
     cut_num = 0
     cut_step = 2
@@ -422,9 +423,11 @@ def step1_python(case_path,is_tc=True):
     # print('bw shape ',bw.shape)
     # visualize_3D(bw.astype(np.uint8))
     bw = fill_hole(bw)
+    print('fill_hole done')
     # visualize_3D(bw.astype(np.uint8))
     # print('fill_hole over')
     bw1, bw2, bw = two_lung_only(bw, spacing)
+    print('two_lung_only done')
     # visualize_3D(bw1.astype(np.uint8))
     # visualize_3D(bw2.astype(np.uint8))
     return case_pixels, bw1, bw2, spacing

@@ -50,7 +50,7 @@ class DataBowl3Detector(Dataset):
             # test阶段是不需要过滤样本的
             idcs = [f for f in idcs if f not in self.blacklist]
 
-        # self.filenames ： 预处理结果的['xxxxx_clean.npy']
+        # self.filenames ： 预处理结果的['/ssss/sssss/xxxxx_clean.npy']
         self.channel = config['chanel']
         if self.channel == 2:
             self.filenames = [os.path.join(data_dir, '%s_merge.npy' % idx) for idx in idcs]
@@ -105,6 +105,12 @@ class DataBowl3Detector(Dataset):
         :param idx: 样本索引
         :param split: 
         :return: 
+        return torch.from_numpy(imgs.astype(np.float32)), bboxes, torch.from_numpy(
+                coord2.astype(np.float32)), np.array(nzhw)
+        imgs : (N,1,D,H,W) N索引patch
+        bboxes ： (N,4) 表示一个CT图像对应的所有肺结节信息
+        coord2 ： (N,1,D,H,W) imgs中各个patch对应的坐标信息
+        nzhw   ： (3,) [int1,int2,int3]
         """
         t = time.time()
         np.random.seed(int(str(t % 1)[2:7]))  # seed according to time
@@ -162,6 +168,9 @@ class DataBowl3Detector(Dataset):
             pw = int(np.ceil(float(nw) / self.stride)) * self.stride # 转化为stride的整数倍
             imgs = np.pad(imgs, [[0, 0], [0, pz - nz], [0, ph - nh], [0, pw - nw]], 'constant',
                           constant_values=self.pad_value)# 多出来的地方进行填充，填充为170;填充过后图像的尺寸为 (1,pz,ph,pw)
+            """
+            将CT分裂，分裂成patch，需要图像的patch 以及 patch的坐标信息
+            """
             xx, yy, zz = np.meshgrid(np.linspace(-0.5, 0.5, imgs.shape[1] / self.stride),
                                      np.linspace(-0.5, 0.5, imgs.shape[2] / self.stride),
                                      np.linspace(-0.5, 0.5, imgs.shape[3] / self.stride), indexing='ij')

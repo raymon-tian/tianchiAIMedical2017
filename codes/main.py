@@ -55,7 +55,9 @@ if not os.path.exists(bbox_result_path):
 
 # 是否跳过 detection的过程，天池肯定不能跳过
 if not skip_detect:
+    # 作用？
     margin = 32
+    # 作用？
     sidelen = 144
     config1['datadir'] = prep_result_path
     # 先将3DCT图像进行分裂，因为如果不分裂，GPU会爆显存
