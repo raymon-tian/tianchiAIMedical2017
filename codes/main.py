@@ -39,7 +39,10 @@ else:
     # 因为所有样本都没有预处理完毕，所以暂时预测已经预处理完毕的样本
     preprocessed = [p.split('_')[0]+'.mhd' for p in os.listdir(prep_result_path) if p.endswith('_label.npy')]
     testsplit = [p for p in testsplit if p in preprocessed]
-    
+    # 选一个调代码
+    testsplit = [testsplit[0]]
+
+
 # ===========   开始 detection ========
 nodmodel = import_module(config_submit['detector_model'].split('.py')[0])
 config1, nod_net, loss, get_pbb = nodmodel.get_model()
