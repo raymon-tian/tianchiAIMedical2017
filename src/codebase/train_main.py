@@ -24,19 +24,20 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
 
-from data import *
+# from data import *
 from utils import *
 from test_main import test_detect
 from split_combine import SplitComb
 from config_train import config as config_train
-from layers import acc
+# from layers import acc
 
 
 parser = argparse.ArgumentParser(description='PyTorch Lung nodule Detector')
 
+# 设置网络计算图，不是训练好的模型参数
 parser.add_argument('--model', '-m', metavar='MODEL', default='base',
                     help='model')
-
+# 数据加载线程
 parser.add_argument('-j', '--workers', default=32, type=int, metavar='N',
                     help='number of data loading workers (default: 32)')
 
@@ -102,7 +103,7 @@ def main():
 
     if not os.path.exists(weights_save_dir):
         os.makedirs(weights_save_dir)
-    if not os.path.exists(val_result_path):
+    if not os.path.exists(val_result_dir):
         os.makedirs(val_result_dir)
 
 

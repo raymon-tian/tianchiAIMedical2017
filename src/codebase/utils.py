@@ -32,10 +32,10 @@ def setgpu(gpuinput):
         gpus = freeids                         # 将列表内容全部赋值给 gpus变量
     else:
         gpus = gpuinput                        # 验证指定使用的GPU是否空闲
-        if any([g not in freeids for g in gpus.split(',')]):
+        if any([g not in freeids for g in gpus.split(',')]):    # any : 只要存在一个为True，则为True
             raise ValueError('gpu'+g+'is being used')
     print('using gpu '+gpus)
-    os.environ['CUDA_VISIBLE_DEVICES']=gpus    # 将指定的CPU列表添加到环境变量中
+    os.environ['CUDA_VISIBLE_DEVICES']=gpus    # 将指定的GPU列表添加到环境变量中
     return len(gpus.split(','))
 
 class Logger(object):                          # 日志相关
@@ -43,7 +43,7 @@ class Logger(object):                          # 日志相关
         self.terminal = sys.stdout
         self.log = open(logfile, "a")
 
-    def write(self, message):
+    def write(self, message):                  # 写的时候，终端以及文件同时写
         self.terminal.write(message)
         self.log.write(message)  
 
