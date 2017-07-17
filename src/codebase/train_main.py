@@ -29,6 +29,7 @@ from utils import *
 from test_main import test_detect
 from split_combine import SplitComb
 from config_train import config as config_train
+from data_load import DataBowl3Detector,collate
 # from layers import acc
 
 
@@ -70,6 +71,9 @@ parser.add_argument('--save-dir', default='', type=str, metavar='SAVE',
 
 parser.add_argument('--test', default=0, type=int, metavar='TEST',
                     help='1 do test evaluation, 0 not')
+
+parser.add_argument('--validation', default=0, type=int, metavar='VAL',
+                    help='1 do validation evaluation, 0 not')
 
 parser.add_argument('--split', default=8, type=int, metavar='SPLIT',
                     help='In the test phase, split the image to 8 parts')
@@ -114,7 +118,8 @@ def main():
     train_datadir = config_train['train_preprocess_result_path']  # 训练数据预处理结果路径
     val_datadir = config_train['val_preprocess_result_path']      # 验证数据预处理结果路径
 
-    if args.test == 1:   # 因为使用了train的数据做训练，就用val的数据做验证
+    # 该段代码仅仅在 args.test设置为1的时候使用
+    if args.test == 1:   # 因为使用了train的数据做训练，就用val的数据做验证;所以，这个主要是进行验证，以及超参数的调参
         margin = 32
         sidelen = 144
 
@@ -124,15 +129,15 @@ def main():
             config,
             phase='test',
             split_comber=split_comber)
-        test_loader = DataLoader(
+        test_loader = DataLoader(             # pytorch 自带
             val_dataset,
             batch_size = 1,
             shuffle = False,
             num_workers = args.workers,
-            collate_fn = collate,
+            collate_fn = collate,              # !这个怎么使用
             pin_memory=False)
         
-        test_detect(test_loader, net, get_pbb, val_result_dir,config,arg.ntest)
+        test_detect(test_loader, net, get_pbb, val_result_dir,config,args.ntest)
         return
 
     # 准备训练数据和val数据，在fine tune的时候，修改成自己的数据
@@ -148,16 +153,17 @@ def main():
         num_workers = args.workers,
         pin_memory=True)
 
-    val_dataset = DataBowl3Detector(           # validation数据
-        val_datadir,
-        config,
-        phase = 'val')
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size = args.batch_size,
-        shuffle = False,
-        num_workers = args.workers,
-        pin_memory=True)
+    if(args.validation == 1):
+        val_dataset = DataBowl3Detector(           # validation数据
+            val_datadir,
+            config,
+            phase = 'val')
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size = args.batch_size,
+            shuffle = False,
+            num_workers = args.workers,
+            pin_memory=True)
 
     optimizer = torch.optim.SGD(            # 梯度下降法，学习率0.01，
         net.parameters(),
@@ -177,7 +183,8 @@ def main():
     # 每个epoch都可以设置不同的参数来进行训练和验证
     for epoch in range(start_epoch, args.epochs + 1):  
         train(train_loader, net, loss, epoch, optimizer, get_lr, args.save_freq, weights_save_dir)
-        validate(val_loader, net, loss)
+        if(args.validation == 1):
+            validate(val_loader, net, loss)
 
 def train(data_loader, net, loss, epoch, optimizer, get_lr, save_freq, save_dir):
 
@@ -189,13 +196,22 @@ def train(data_loader, net, loss, epoch, optimizer, get_lr, save_freq, save_dir)
         param_group['lr'] = lr                        # 重置学习率
 
     metrics = []
+    # data, target, coord 并非是一个样本，而是一个batch；另外，i并非表示第i个样本，而是指的是第i个batch
     for i, (data, target, coord) in enumerate(data_loader):
+        """
+        ('data size  ---> ', (32L, 1L, 128L, 128L, 128L))
+        ('target size  ---> ', (32L, 32L, 32L, 32L, 3L, 5L))
+        ('coord size  ---> ', (32L, 3L, 32L, 32L, 32L))
+        """
+        print('data size  ---> ',data.size())
+        print('target size  ---> ',target.size())
+        print('coord size  ---> ',coord.size())
         data = Variable(data.cuda(async = True))      # 图像数据
         target = Variable(target.cuda(async = True))  #
         coord = Variable(coord.cuda(async = True))    # 都是什么数据，要弄清楚
 
-        output = net(data, coord)                     # 网络输出
-        loss_output = loss(output, target)            # 计算损失
+        output = net(data, coord)                     # 网络输出；data coord 以及 target都是 网络的输入，不过参与loss计算的只有target
+        loss_output = loss(output, target)            # 计算损失；loss的计算由output以及target构成
         optimizer.zero_grad()                         # 梯度清零
         loss_output[0].backward()                     # 计算梯度
         optimizer.step()                              # 更新权重
@@ -237,7 +253,7 @@ def train(data_loader, net, loss, epoch, optimizer, get_lr, save_freq, save_dir)
 def validate(data_loader, net, loss):
     start_time = time.time()
     
-    net.eval()                                # 转换成 测试模式，BatchNM和drop会受到影响
+    net.eval()                                # 转换成 测试模式，BatchNM和drop会受到影响 !
 
     metrics = []
     for i, (data, target, coord) in enumerate(data_loader):
@@ -246,7 +262,7 @@ def validate(data_loader, net, loss):
         coord = Variable(coord.cuda(async = True), volatile = True)     # 转换成torch格式
 
         output = net(data, coord)                                       # 网络输出
-        loss_output = loss(output, target, train = False)               # 计算损失
+        loss_output = loss(output, target, train = False)               # 计算损失；! 为何与train的loss计算不一致
 
         loss_output[0] = loss_output[0].data[0]                         # 损失数据
         metrics.append(loss_output)    

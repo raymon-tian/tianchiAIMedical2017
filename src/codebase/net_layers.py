@@ -15,12 +15,10 @@ topkpbb
 """
 import math
 import torch
-
 import numpy as np
-
 from torch import nn
 
-
+# 没有用到，可以不看
 class PostRes2d(nn.Module):   # 暂时用不到，可以不看
 
     def __init__(self, n_in, n_out, stride = 1):
@@ -83,6 +81,7 @@ class PostRes(nn.Module):
         out = self.relu(out)
         return out
 
+# 没有用到，可以不看
 class Rec3(nn.Module):
     def __init__(self, n0, n1, n2, n3, p = 0.0, integrate = True):
         super(Rec3, self).__init__()

@@ -15,7 +15,7 @@ import time
 import glob
 import torch
 import random
-import warnings
+import warnings                                         # !不懂
 import collections
 
 import numpy as np
@@ -29,7 +29,8 @@ from net_layers import iou
 
 class DataBowl3Detector(Dataset):
     """
-    继承自Dataset类，必须实现其中的 __getitem__ 以及 __len__ 方法
+    继承自Dataset类，必须实现其中的 __getitem__ 以及 __len__ 方法;
+    对于我们的数据集的一些定义
     """
     def __init__(self, data_dir, config, phase = 'train',split_comber=None):
         """
@@ -51,16 +52,16 @@ class DataBowl3Detector(Dataset):
         self.blacklist = config['blacklist']                # blacklist
         self.isScale = config['aug_scale']                  # True
         self.r_rand = config['r_rand_crop']                 # 0.3
-        self.augtype = config['augtype']                    # flip scale
+        self.augtype = config['augtype']                    # {'flip':True,'swap':False,'scale':True,'rotate':False}
         self.pad_value = config['pad_value']                # 170
         self.split_comber = split_comber                    # split combine method
 
         
-        split_0 = [f for f in glob.glob(data_dir+'/*clean.npy')]  # 训练数据的全部文件 
-        split_1 = [f.split('/')[-1] for f in split_0]
-        split_list = [f.split('_clean')[0] for f in split_1]
+        split_0 = [f for f in glob.glob(data_dir+'/*clean.npy')]  # 训练数据的全部文件 图像的全路径名
+        split_1 = [f.split('/')[-1] for f in split_0]             # 图像的文件名
+        split_list = [f.split('_clean')[0] for f in split_1]      # 图像的id
 
-        idcs = split_list                                          # 所有CT图像的ID列表，没有后缀
+        idcs = split_list # 所有CT图像的ID列表，没有后缀，并不是索引，所以不是整数
 
         if phase!='test':                                  
             idcs = [f for f in idcs if (f not in self.blacklist)]  # 非测试模式下，将黑名单中的文件去除
@@ -69,7 +70,7 @@ class DataBowl3Detector(Dataset):
                                                                    # 所有的CT图像数据列表,完整路径，带后缀
         
         labels = []
-        
+        # 一个CT图像，对应一个label
         for idx in idcs:
             l = np.load(os.path.join(data_dir, '%s_label.npy' % idx))
             if np.all(l==0): # 若l中全为0
@@ -82,11 +83,11 @@ class DataBowl3Detector(Dataset):
         if self.phase != 'test':
             self.bboxes = []   # 一个肺结节标注是一条记录
             for i, l in enumerate(labels):  # 对labels进行遍历，以图像为单位索引
-                if len(l) > 0 :             # l是某一张CT图像的所有肺结节标注信息  # 应对  不同直径肺结节样本  不均衡的问题
+                if len(l) > 0 :             # l是某一张CT图像的所有肺结节标注信息
                     for t in l:
-                        self.bboxes.append([np.concatenate([[i],t])])  # id,d,h,w,d
+                        self.bboxes.append([np.concatenate([[i],t])])  # id,d,h,w,d (5,)
             # 这个时候，来自同一个CT的肺结节已经分开放置
-            # 每一行表示一个标注信息，shape:(N,5), 分别表示为 id，z,h,w,dia
+            # 每一行表示一个标注信息，shape:(N,5), 分别表示为 id,z,h,w,dia;其中，id表示该条肺结节所属图像的id，该id对应于idcs
             self.bboxes = np.concatenate(self.bboxes,axis = 0)
 
         self.crop = Crop(config)                              # 构造函数，不进行具体计算
@@ -95,19 +96,22 @@ class DataBowl3Detector(Dataset):
     def __getitem__(self, idx, split=None):
         """
         继承父类方法，必须实现
-        :param idx: 是对 一条肺结节标注信息 的索引，不是对CT图像的索引
+        :param idx: 是对 一条肺结节标注信息 的索引，不是对CT图像的索引；这里的idx会遍历 __len__ 的返回值；譬如 __len__ 的返回值
+        为10，那么idx将在 0~9
         :param split: 
         :return: 
         """
         t = time.time()
         np.random.seed(int(str(t%1)[2:7]))    #seed according to time
 
-        isRandomImg  = False
+        isRandomImg  = False # 表示是否是 随机图像；test阶段，其值为False；train阶段，前(self.bboxes)个样本为False；后面的样本未知
+        # 过采样的样本 加入随机性；
         if self.phase !='test':
             if idx>=len(self.bboxes):
                 isRandom = True
                 idx = idx % len(self.bboxes)
                 # 随机生成 整数 0 以及 1
+                # 仅仅对 超过索引 len(self.bboxes)的样本进行随机
                 isRandomImg = np.random.randint(2)
             else:
                 isRandom = False
@@ -115,25 +119,27 @@ class DataBowl3Detector(Dataset):
             isRandom = False
         
         if self.phase != 'test':
+            # 不是随机的图像
             if not isRandomImg:
-                bbox = self.bboxes[idx]                   # 取一条肺结节标注记录
+                bbox = self.bboxes[idx]                   # 取一条肺结节标注记录 (5,) 分别为 id,d,h,w,d
                 filename = self.filenames[int(bbox[0])]   # 取出索引，和self.sample_bbox一致
                 imgs = np.load(filename)                  # 读取图像
-                # 该CT图像对应的所有肺结节
+                # 该CT图像对应的所有肺结节标注信息
                 bboxes = self.sample_bboxes[int(bbox[0])] # 读取该图像对应的所有标注
                 
                 isScale = self.augtype['scale']
             
                 #  这里有疑问？？？？？？？？
-                if self.phase=='train':  # 只在 train 阶段 进行crop
+                if self.phase=='train':  # 只在 train 阶段 进行crop __call__ 方法调用； train阶段的样本，这个函数一定会用到;train阶段数据处理的第一步
                     sample, target, bboxes, coord = self.crop(imgs, bbox[1:], bboxes,isScale,isRandom)
 
                 if self.phase=='train' and not isRandom:
-                    # 进行数据增强
+                    # 进行数据增强 augment ： train阶段的前 len(self.bboxes)个图像一定会被用到
                     sample, target, bboxes, coord = augment(sample, target, bboxes, coord,
                                                             ifflip = self.augtype['flip'], 
                                                             ifrotate=self.augtype['rotate'], 
                                                             ifswap = self.augtype['swap'])
+            # 是随机的图像
             else:
                 randimid = np.random.randint(len(self.filenames))   # 随机生成一个图像ID
                 filename = self.filenames[randimid]                 # 图像路径
@@ -141,6 +147,8 @@ class DataBowl3Detector(Dataset):
                 bboxes = self.sample_bboxes[randimid]               # 读取该图像的所有标注信息
                 isScale = self.augtype['scale'] and (self.phase=='train')
                 sample, target, bboxes, coord = self.crop(imgs, [], bboxes,isScale=False,isRand=True)
+
+            # ! important;在 label_mapping 中并没有使用 coord
             label = self.label_mapping(sample.shape[1:], target, bboxes)
 
             # 处理到[-0.5,0.5]
@@ -187,6 +195,7 @@ class DataBowl3Detector(Dataset):
     def __len__(self):
         """
         继承父类方法，必须实现
+        注意，这里返回的时候，train 以及 val阶段，返回的是 len(标记数据)；test阶段返回的是 len(图像数目)
         :return: 
         """
         if self.phase == 'train':
@@ -199,15 +208,26 @@ class DataBowl3Detector(Dataset):
             # test
             return len(self.sample_bboxes)              # 一共有多少个训练数据
         
-        
+# !
 def augment(sample, target, bboxes, coord, ifflip = True, ifrotate=True, ifswap = True):
+    """
+    比较难，暂时跳过
+    :param sample: CT数据 (1,D,H,W)
+    :param target: 一条标注信息
+    :param bboxes: 该CT的所有标注信息
+    :param coord:  一种case为(3,32,32,32)； meshgrid+concatenate 操作后的结果
+    :param ifflip: bool
+    :param ifrotate: bool
+    :param ifswap: bool
+    :return:
+    """
     #                     angle1 = np.random.rand()*180
     if ifrotate:
         validrot = False
         counter = 0
         while not validrot:
             newtarget = np.copy(target)
-            angle1 = np.random.rand()*180
+            angle1 = np.random.rand()*180 # 随机角度 0~180
             # angle1 = (np.random.rand()-0.5)*20
             size = np.array(sample.shape[2:4]).astype('float')
             rotmat = np.array([[np.cos(angle1/180*np.pi),-np.sin(angle1/180*np.pi)],
@@ -244,6 +264,7 @@ def augment(sample, target, bboxes, coord, ifflip = True, ifrotate=True, ifswap 
                 bboxes[:,ax] = np.array(sample.shape[ax + 1]) - bboxes[:, ax]
     return sample, target, bboxes, coord 
     # 图像，一条标注信息，所有的标注信息，coord
+
 class Crop(object):
 
     def __init__(self, config):
@@ -258,6 +279,7 @@ class Crop(object):
 
     def __call__(self, imgs, target, bboxes, isScale=False, isRand=False):
         """
+        usage ： sample, target, bboxes, coord = self.crop(imgs, bbox[1:], bboxes,isScale,isRandom)
         :param imgs: 一张CT图像的 narray数据
         :param target: 一条肺结节坐标标注  D H W dia
         :param bboxes: 一张图像的所有肺结节标注
@@ -267,27 +289,30 @@ class Crop(object):
         crop : 来自 imgs
         """
         if isScale:
+            # !传入的是 直径，这里是半径；数据的适配
             radiusLim = [8.,120.]
             # radiusLim = [8.,100.]
             scaleLim = [0.75,1.25]
 
-            scaleRange = [np.min([np.max([(radiusLim[0] / target[3]), scaleLim[0]]), 1])
-                         ,np.max([np.min([(radiusLim[1] / target[3]), scaleLim[1]]), 1])]
-            # scale 在 0~2 之间
+            scaleRange = [np.min([np.max([(radiusLim[0] / target[3]), scaleLim[0]]), 1])  # 0.75<= ? <=1
+                         ,np.max([np.min([(radiusLim[1] / target[3]), scaleLim[1]]), 1])] # 1<= ?  <= 1.25
+            # scale 在 0.75 ~ 1.25 之间
             scale = np.random.rand() * (scaleRange[1] - scaleRange[0]) + scaleRange[0]
+            #
             crop_size = (np.array(self.crop_size).astype('float') / scale).astype('int')
         else:
             crop_size = self.crop_size   # [128,128,128]
+
         bound_size = self.bound_size     #  12
         target = np.copy(target)
         bboxes = np.copy(bboxes)
         
-        start = []
-        for i in range(3):
+        start = [] # [int1,int2,int3] 这里就是为了确定 3个轴上的起始点
+        for i in range(3):   # 表示 D H W 3个维度
             if not isRand:   # 不随机，crop的是肺结节周边区域
                 r = target[3] / 2    # 肺结节半径长度
                 s = np.floor(target[i] - r) + 1 - bound_size
-                e = np.ceil (target[i] + r) + 1 + bound_size - crop_size[i] 
+                e = np.ceil(target[i] + r) + 1 + bound_size - crop_size[i]
             else:  # img 的维度（1,D,H,W）  从图像上随意crop一块
                 s = np.max([imgs.shape[i + 1] - crop_size[i] / 2, imgs.shape[i + 1] / 2 + bound_size])
                 e = np.min([crop_size[i]/2, imgs.shape[i + 1] / 2-bound_size])
@@ -300,10 +325,13 @@ class Crop(object):
                 
         normstart = np.array(start).astype('float32')/np.array(imgs.shape[1:])-0.5
         normsize = np.array(crop_size).astype('float32')/np.array(imgs.shape[1:])
-        xx,yy,zz = np.meshgrid(np.linspace(normstart[0], normstart[0] + normsize[0], self.crop_size[0] / self.stride),
+        # meshgrid 有 笛卡尔 以及 矩阵 两种索引方式，默认的笛卡尔，需要注意!
+        xx,yy,zz = np.meshgrid(np.linspace(normstart[0], normstart[0] + normsize[0], self.crop_size[0] / self.stride),  # !这里是 32 的来源
                                np.linspace(normstart[1], normstart[1] + normsize[1], self.crop_size[1] / self.stride),
                                np.linspace(normstart[2], normstart[2] + normsize[2], self.crop_size[2] / self.stride),
                                indexing ='ij')
+        # coord的shape应该是 (3,D,H,W)
+        # 这里生成了 coord，但是coord到底用来干什么
         coord = np.concatenate([xx[np.newaxis,...], yy[np.newaxis,...],zz[np.newaxis,:]],0).astype('float32')
 
         pad = []
@@ -341,6 +369,7 @@ class Crop(object):
                     bboxes[i][j] = bboxes[i][j] * scale
         return crop, target, bboxes, coord
         # 原始图像信息，一条标注信息，全部的标注信息，coord
+
 class LabelMapping(object):
     def __init__(self, config, phase):
         self.stride = np.array(config['stride'])       # 4
@@ -356,8 +385,8 @@ class LabelMapping(object):
     def __call__(self, input_size, target, bboxes):
         """
         usage: label = self.label_mapping(sample.shape[1:], target, bboxes)
-        :param input_size: 图像的D,H，W
-        :param target:  一条标注信息 坐标
+        :param input_size: 图像的D,H,W tuple
+        :param target:  一条标注信息 坐标 tuple (4,)
         :param bboxes:  全部标注信息
         :return: 
         """
@@ -369,7 +398,7 @@ class LabelMapping(object):
         ## struct = generate_binary_structure(3,1)
         output_size = []
         for i in range(3):
-            assert(input_size[i] % stride == 0)
+            assert(input_size[i] % stride == 0) # 必须是 stride的整数倍
             output_size.append(input_size[i] / stride)  # 输入尺寸除以4，为了创造输出的ground truth
         
         label = -1 * np.ones(output_size + [len(anchors), 5], np.float32)  # label初始化为全-1
@@ -383,6 +412,7 @@ class LabelMapping(object):
             for i, anchor in enumerate(anchors):
                 iz, ih, iw = select_samples(bbox, anchor, th_neg, oz, oh, ow)
                 label[iz, ih, iw, i, 0] = 0
+
         if self.phase == 'train' and self.num_neg > 0:
             neg_z, neg_h, neg_w, neg_a = np.where(label[:, :, :, :, 0] == -1)
             neg_idcs = random.sample(range(len(neg_z)), min(num_neg, len(neg_z))) # 随机选取不重复的乱序的第二个参数个数的序列
@@ -423,6 +453,16 @@ class LabelMapping(object):
         return label        
 
 def select_samples(bbox, anchor, th, oz, oh, ow):
+    """
+
+    :param bbox: 一条标注信息
+    :param anchor: float 10 20 30
+    :param th: float 0.01
+    :param oz: (N,)
+    :param oh: (N,)
+    :param ow: (N,)
+    :return:
+    """
     # bbox 一条肺结节标注
     # [10,30,60]
     # th: th_neg 0.01
@@ -480,6 +520,15 @@ def select_samples(bbox, anchor, th, oz, oh, ow):
         union = anchor * anchor * anchor + d * d * d - intersection
 
         iou = intersection / union
+
+        # !我自己加的 下面这行代码
+        # print(iou,th)
+        iou = np.array(iou)
+        iou = np.average(iou)
+        iou = np.array(iou)
+        # print(iou,th)
+        # 到这里为止
+
         if iou >= th:
             return iz, ih, iw
         else:

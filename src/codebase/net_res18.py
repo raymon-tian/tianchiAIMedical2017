@@ -7,7 +7,7 @@ from torch import nn
 from net_layers import *
 
 config = {}
-config['thresh'] = 0                 # 对最终输出结果的概率的选取阈值  >thresh
+config['thresh'] = 0                   # 对最终输出结果的概率的选取阈值  >thresh
 config['nms_th'] = 0.4                 # 最终输出结果进行非极大值抑制，此为阈值
 config['anchors'] = [ 10.0, 20.0, 30.0] # 三个不同的尺度，10mm,30mm,60mm
 config['chanel'] = 1                   # 灰度图
@@ -28,7 +28,7 @@ config['aug_scale'] = True             # ？
 config['r_rand_crop'] = 0.3            # ？ 
 config['pad_value'] = 170              # 在区域外的都填充成170
 config['augtype'] = {'flip':True,'swap':False,'scale':True,'rotate':False}  # 样本增强类型
-config['blacklist'] = [ ]
+config['blacklist'] = []
 
 class Net(nn.Module):
     def __init__(self):
@@ -61,7 +61,7 @@ class Net(nn.Module):
                     blocks.append(PostRes(self.featureNum_forw[i], self.featureNum_forw[i+1]))
                 else:
                     blocks.append(PostRes(self.featureNum_forw[i+1], self.featureNum_forw[i+1]))
-            setattr(self, 'forw' + str(i + 1), nn.Sequential(*blocks))
+            setattr(self, 'forw' + str(i + 1), nn.Sequential(*blocks)) #setattr:为对象增加一个属性
 
         # 输入参数
         # self.back1 [(131, 128), (128, 128), (128, 128)]
@@ -83,11 +83,11 @@ class Net(nn.Module):
         self.maxpool2 = nn.MaxPool3d(kernel_size=2,stride=2,return_indices =True)
         self.maxpool3 = nn.MaxPool3d(kernel_size=2,stride=2,return_indices =True)
         self.maxpool4 = nn.MaxPool3d(kernel_size=2,stride=2,return_indices =True)
-        self.unmaxpool1 = nn.MaxUnpool3d(kernel_size=2,stride=2)
+        self.unmaxpool1 = nn.MaxUnpool3d(kernel_size=2,stride=2)    # !上采样
         self.unmaxpool2 = nn.MaxUnpool3d(kernel_size=2,stride=2)
 
         self.path1 = nn.Sequential(
-            nn.ConvTranspose3d(64, 64, kernel_size = 2, stride = 2),
+            nn.ConvTranspose3d(64, 64, kernel_size = 2, stride = 2),# !
             nn.BatchNorm3d(64),
             nn.ReLU(inplace = True))
         self.path2 = nn.Sequential(
@@ -100,6 +100,11 @@ class Net(nn.Module):
                                    nn.Conv3d(64, 5 * len(config['anchors']), kernel_size = 1))
 
     def forward(self, x, coord):
+        """
+        :param x: (N,1,128,128,128)
+        :param coord: (N,3,32,32,32)
+        :return:
+        """
         out = self.preBlock(x)   # 1->24->24
         out_pool,indices0 = self.maxpool1(out)  # 128*128->64*64
         out1 = self.forw1(out_pool) # 24->32->32

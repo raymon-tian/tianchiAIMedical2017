@@ -5,9 +5,9 @@ config = {
     'train_data_path':'../data/train/',
     'train_annos_path':
         [
-            '../data/train/annotations.csv',
-            '../data/train/annotations_excluded.csv',
-            '../data/train/seriesuids.csv'
+            '../data/csv/train/annotations.csv',
+            '../data/csv/train/annotations_excluded.csv',
+            '../data/csv/train/seriesuids.csv'
         ],
     'train_preprocess_result_path': '../data/pre_result/train/',
     'val_data_path':'../data/val/',
